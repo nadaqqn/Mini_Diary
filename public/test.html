@@ -1,0 +1,10 @@
+<script type="module">
+  import { db } from "./firebase-init.js";
+  import { ref, push, set } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+  const testRef = ref(db, "notes-test");
+  const newRef = push(testRef);
+  set(newRef, { text: "Hello Firebase!", timestamp: Date.now() })
+    .then(() => console.log("Success"))
+    .catch(e => console.error(e));
+</script>

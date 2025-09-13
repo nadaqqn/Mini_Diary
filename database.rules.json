@@ -6,7 +6,7 @@
       "$noteId": {
         ".validate": "newData.hasChildren(['text','timestamp']) &&
                       newData.child('text').isString() &&
-                      newData.child('timestamp').isString() &&
+                      newData.child('timestamp').isNumber() &&
                       newData.child('text').val().length <= 20000"
       }
     }

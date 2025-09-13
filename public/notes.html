@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tulis Diary</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Patrick Hand', cursive; }
+    .lined-paper {
+      background: repeating-linear-gradient(white, white 28px, #f0f0f0 29px);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    #editor-container { height: 300px; background: transparent; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-pink-100 p-6 flex flex-col items-center">
+
+  <!-- Navbar -->
+  <nav class="w-full max-w-4xl flex justify-between items-center mb-6">
+    <a href="index.html" class="text-pink-600 font-bold hover:underline">🏠 Home</a>
+    <a href="list.html" class="text-pink-600 font-bold hover:underline">📔 Diary List</a>
+  </nav>
+
+  <h2 class="text-2xl font-bold text-pink-600 mb-4">📝 Tulis Diary</h2>
+
+  <!-- Toolbar -->
+  <div id="toolbar" class="mb-2">
+    <select class="ql-header">
+      <option value="1"></option>
+      <option value="2"></option>
+      <option selected></option>
+    </select>
+    <button class="ql-bold"></button>
+    <button class="ql-italic"></button>
+    <button class="ql-underline"></button>
+    <button class="ql-list" value="ordered"></button>
+    <button class="ql-list" value="bullet"></button>
+    <button class="ql-color"></button>
+  </div>
+
+  <!-- Editor -->
+  <div class="lined-paper w-full max-w-2xl shadow-md">
+    <div id="editor-container"></div>
+  </div>
+
+  <!-- Counter -->
+  <p id="wordCounter" class="mt-2 text-sm text-gray-600">0 / 500 kata</p>
+
+  <!-- Buttons -->
+  <div class="mt-4 flex gap-4">
+    <button onclick="saveNote()" 
+      class="bg-pink-400 hover:bg-pink-500 text-white px-6 py-2 rounded-lg">
+      💾 Save
+    </button>
+    <button onclick="clearNote()" 
+      class="bg-red-400 hover:bg-red-500 text-white px-6 py-2 rounded-lg">
+      🗑️ Empty
+    </button>
+    <a href="index.html" 
+      class="bg-gray-400 hover:bg-gray-500 text-white px-6 py-2 rounded-lg">
+      ⬅️ Back
+    </a>
+  </div>
+
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+ <script type="module">
+    import { db } from "./firebase-init.js";
+    import { ref, push, set, update } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
+
+    const maxWords = 500;
+    const counter = document.getElementById("wordCounter");
+
+    // Quill editor
+    var quill = new Quill('#editor-container', {
+      modules: { toolbar: '#toolbar' },
+      theme: 'snow'
+    });
+
+    // Word counter
+    quill.on('text-change', function () {
+      let text = quill.getText().trim();
+      let words = text.split(/\s+/).filter(w => w.length > 0);
+      counter.textContent = words.length + " / " + maxWords + " kata";
+
+      if (words.length > maxWords) {
+        counter.classList.add("text-red-500");
+        quill.deleteText(quill.getLength() - 2, 1);
+      } else {
+        counter.classList.remove("text-red-500");
+      }
+    });
+
+    // --- Check edit mode ---
+    let editKey = localStorage.getItem("editKey"); // ganti dari editIndex ke editKey
+    if (editKey) {
+      const noteRef = ref(db, "notes/" + editKey);
+      // ambil data note dari firebase untuk edit
+      noteRef.get().then(snapshot => {
+        if (snapshot.exists()) {
+          quill.root.innerHTML = snapshot.val().text;
+        }
+      });
+    }
+
+    // --- Save note ---
+    function saveNote() {
+      const text = quill.root.innerHTML.trim();
+      const plainText = quill.getText().trim();
+      if (!plainText) return alert("Isi dulu catatannya ya!");
+
+      const timestamp = Date.now();
+
+      if (editKey) {
+        // Update note
+        const noteRef = ref(db, "notes/" + editKey);
+        update(noteRef, { text: text, timestamp: timestamp }).then(() => {
+          localStorage.removeItem("editKey");
+          window.location.href = "list.html";
+        });
+      } else {
+        // New note
+        const notesRef = ref(db, "notes");
+        const newNoteRef = push(notesRef);
+        set(newNoteRef, { text: text, timestamp: timestamp }).then(() => {
+          window.location.href = "list.html";
+        });
+      }
+    }
+
+    // --- Clear note ---
+    function clearNote() {
+      if (confirm("Yakin mau kosongin catatan ini?")) {
+        quill.setContents([]);
+        counter.textContent = "0 / " + maxWords + " kata";
+        counter.classList.remove("text-red-500");
+      }
+    }
+
+    // Expose saveNote & clearNote ke HTML
+    window.saveNote = saveNote;
+    window.clearNote = clearNote;
+    </script>
+
+
+
+</body>
+</html>
