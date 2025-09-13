@@ -8,20 +8,20 @@
   <!-- html2canvas untuk download -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
-  .diary-page {
-    background: url('diary-bg.png') no-repeat center;
-    background-size: cover;
-    width: 380px;
-    height: 600px;
-    padding: 80px 40px 20px 40px; /* top right bottom left */
-    font-family: "Patrick Hand", cursive;
-    font-size: 18px;
-    line-height: 28px;
-    letter-spacing: 1px;
-    white-space: pre-wrap;
-    overflow: hidden;
-  }
-  .page-container { display: flex; transition: transform 0.5s ease; }
+    .diary-page {
+      background: url('diary-bg.png') no-repeat center;
+      background-size: cover;
+      width: 380px;
+      height: 600px;
+      padding: 80px 40px 20px 40px;
+      font-family: "Patrick Hand", cursive;
+      font-size: 18px;
+      line-height: 28px;
+      letter-spacing: 1px;
+      white-space: pre-wrap;
+      overflow: hidden;
+    }
+    .page-container { display: flex; transition: transform 0.5s ease; }
   </style>
 </head>
 <body class="min-h-screen bg-pink-50 p-6">
@@ -47,23 +47,29 @@
       </div>
     </div>
   </div>
-  
+
 <script type="module">
 import { db } from "./firebase-init.js";
 import { ref, onValue } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-database.js";
 
-const notesRef = ref(db, "notes"); // path notes di Firebase
+const notesRef = ref(db, "notes");
 const list = document.getElementById("notesList");
 const container = document.getElementById("pageContainer");
 let currentPage = 0, totalPages = 0;
+
+let notes = [];
 
 function renderNotes(notesArray) {
   list.innerHTML = "";
   notesArray.forEach((note, index) => {
     const li = document.createElement("li");
     li.className = "bg-pink-50 border p-4 rounded-lg shadow flex justify-between items-center";
+
+    // Gunakan timestamp bukan createdAt
+    const noteDate = note.timestamp ? new Date(note.timestamp).toLocaleString() : "Tanggal tidak tersedia";
+
     li.innerHTML = `
-      <div><strong>Diary — ${new Date(note.createdAt).toLocaleString()}</strong></div>
+      <div><strong>Diary — ${noteDate}</strong></div>
       <div class="space-x-2">
         <button class="px-2 py-1 bg-pink-400 hover:bg-pink-500 text-white rounded" onclick="viewDiary(${index})">View</button>
         <button class="px-2 py-1 bg-pink-300 hover:bg-pink-400 text-white rounded" onclick="editDiary(${index})">Edit</button>
@@ -73,15 +79,14 @@ function renderNotes(notesArray) {
   });
 }
 
-let notes = [];
-
+// Fetch notes dari Firebase
 onValue(notesRef, (snapshot) => {
   const data = snapshot.val();
   notes = data ? Object.values(data) : [];
   renderNotes(notes);
 });
 
-// --- Modal & pagination tetap sama ---
+// Modal & pagination functions
 function viewDiary(index) {
   container.innerHTML = "";
   totalPages = 0;
@@ -130,7 +135,7 @@ function viewDiary(index) {
 }
 
 function editDiary(index) {
-  localStorage.setItem("editIndex", index);
+  localStorage.setItem("editKey", Object.keys(snapshot.val())[index]); // update ke editKey
   window.location.href = "notes.html";
 }
 
@@ -138,15 +143,10 @@ function deleteDiary(index) {
   alert("Untuk delete di Firebase, implementasikan dengan ref & remove(). LocalStorage delete sudah dihapus.");
 }
 
-function showPage(i) {
-  container.style.transform = `translateX(-${i*380}px)`;
-}
+function showPage(i) { container.style.transform = `translateX(-${i*380}px)`; }
 function nextPage() { if (currentPage < totalPages-1) showPage(++currentPage); }
 function prevPage() { if (currentPage > 0) showPage(--currentPage); }
-
-function closeModal() {
-  document.getElementById("modal").classList.add("hidden");
-}
+function closeModal() { document.getElementById("modal").classList.add("hidden"); }
 
 async function downloadPage() {
   const page = container.children[currentPage];
@@ -158,7 +158,6 @@ async function downloadPage() {
   link.click();
 }
 </script>
-
 
 </body>
 </html>
