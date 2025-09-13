@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "notes": {
+      ".read": true,
+      ".write": true,
+      "$noteId": {
+        ".validate": "newData.hasChildren(['text','timestamp']) &&
+                      newData.child('text').isString() &&
+                      newData.child('timestamp').isString() &&
+                      newData.child('text').val().length <= 20000"
+      }
+    }
+  }
+}
